@@ -1,0 +1,21 @@
+{
+  "verified_on": "2026-11-10",
+  "note": "Maintained reference notes; not a successful Tavily search result.",
+  "sources": [
+    {
+      "title": "W3C WAI: Labeling controls",
+      "url": "https://www.w3.org/WAI/tutorials/forms/labels/",
+      "requirement": "Use an associated label for each form control; aria-label is an alternative, not an additional requirement when a label exists."
+    },
+    {
+      "title": "MDN: Email input",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/email",
+      "requirement": "Use input type=email and browser constraint validation as the frontend email syntax baseline; it does not verify mailbox ownership."
+    },
+    {
+      "title": "MDN: HTML forms",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/HTML_forms",
+      "requirement": "Use semantic form controls and labels; separate presentation and behavior into linked CSS and JavaScript files."
+    }
+  ]
+}

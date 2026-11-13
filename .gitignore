@@ -1,0 +1,12 @@
+backend/.env
+backend/__pycache__/
+backend/lib/
+backend/.DS_Store
+backend/.crewai/
+
+
+frontend/.pytest_cache/
+frontend/.streamlit/
+frontend/.venv/
+frontend/__pycache__/
+frontend/.env
