@@ -1,76 +1,93 @@
 # DevCrew — AI Software Development Team
 
-The active application is split into a CrewAI backend and a Streamlit frontend. The backend was created with the real CrewAI CLI, then adapted from its classic Flow scaffold. See backend/SCAFFOLD_PROVENANCE.md and backend/scaffold_reference/ for the original generated code.
+DevCrew takes a frontend brief, plans the work, generates a linked web project, and reviews a rendered result. Streamlit displays progress and downloads. A local API starts one worker process for each run. The worker uses the OpenAI API and runs the CrewAI Flow.
 
-## Start in two terminals
+## Run locally
 
-Terminal 1 — backend, from this project folder:
+Set `OPENAI_API_KEY` in `backend/.env`. Use `backend/.env.example` as a template. Set `MODEL` there to select the OpenAI model, and optionally set `TAVILY_API_KEY` for documentation search. Keep credentials out of Git. Chrome or Edge is needed for browser checks. Set `CHROME_PATH` if the browser is installed in a nonstandard location.
 
-~~~powershell
+From the project root, start the backend in one terminal.
+
+```powershell
 cd backend
 uv sync
 uv run crewai run
-~~~
+```
 
-Keep that terminal running. The command uses the generated kickoff entry point to start this application's local API at http://127.0.0.1:8000. Requests received by the API launch the real CrewAI DevelopmentFlow in an isolated worker process. This service startup is an application customization; CrewAI does not generate an HTTP server automatically.
+In a second terminal, start Streamlit from the project root.
 
-Terminal 2 — frontend, from this project folder:
-
-~~~powershell
+```powershell
 cd frontend
 uv sync
 uv run streamlit run app.py
-~~~
+```
 
-Open http://localhost:8501. Choose Offline rehearsal for a fixed sample without model/search charges. Live CrewAI uses backend/.env. Existing configuration has been copied there; future key/model changes belong there. The frontend needs no model or Tavily credentials.
+Open http://localhost:8501. The backend listens at http://127.0.0.1:8000 by default. If you change `DEVCREW_BACKEND_PORT` in the backend, point `DEVCREW_BACKEND_URL` in `frontend/.env` at the matching address. Every new run uses the configured model. The test suite uses simulated responses and does not require API credits.
 
-Each folder has its own pyproject.toml, uv.lock, .python-version and virtual environment. Python 3.13 is pinned to match the tested environment. If uv is not on PATH, use C:\Users\Aftab\.local\bin\uv.exe.
+## How a request moves through the application
 
-## Source map
+1. Streamlit sends the brief to the backend, which validates it, creates an output directory, and starts a worker.
+2. The Flow plans the work, runs design and standards research in parallel, then passes both results to the developer.
+3. The browser renders the generated files. Code, security, and visual review use the current revision and available evidence. QA consolidates the results.
+4. The Flow writes a release candidate or requests a targeted patch. It preserves the latest draft when a verified issue persists or the revision stops making progress. Streamlit polls the session and offers the saved files for download.
 
-| Location | Responsibility |
+The developer can adapt the authored Forma login foundation. The example is a frontend demonstration. Production authentication would require a separate implementation.
+
+## File guide
+
+Paths under `backend/src/devcrew_backend/` are relative to that package in the first table.
+
+| File | Responsibility |
 | --- | --- |
-| backend/src/devcrew_backend/main.py | CrewAI kickoff, plot and trigger entry points |
-| backend/src/devcrew_backend/flows/development_flow.py | Typed Flow, parallel stages, review and revision routing |
-| backend/src/devcrew_backend/crews/software_team/software_team.py | Classic @CrewBase, @agent, @task and @crew definitions |
-| backend/src/devcrew_backend/crews/software_team/config/agents.yaml | Authoritative role, goal and backstory definitions |
-| backend/src/devcrew_backend/crews/software_team/config/tasks.yaml | Authoritative task instructions |
-| backend/src/devcrew_backend/services/backend.py | Model adapter, request telemetry, Tavily MCP tool and visual image review |
-| backend/src/devcrew_backend/services/api.py | Local HTTP routes, history and artifact downloads |
-| backend/src/devcrew_backend/services/runner.py | Worker lifecycle and manual cancellation |
-| backend/src/devcrew_backend/services/models.py | Pydantic plans, designs, projects, patches and reports |
-| frontend/app.py | Streamlit mission control |
-| frontend/client.py | HTTP-only backend client |
-| frontend/presentation.py | Styles and parallel phase display helpers |
-| backend/outputs/ | New isolated session folders |
+| `main.py` | CrewAI CLI entry points. Starts the API, runs a supplied trigger brief, or plots the native Flow on demand. |
+| `crews/software_team/software_team.py` | Binds individual roles to decorated CrewAI agents and tasks. Builds one stage crew at a time. |
+| `crews/software_team/config/agents.yaml` | Role, goal, and backstory for each of the eight predefined agents. |
+| `crews/software_team/config/tasks.yaml` | Task-specific prompts and expected deliverables. The Python factory sets the runtime schema, including the developer patch schema. |
+| `flows/development_flow.py` | Pydantic Flow state, parallel scheduling, handoffs, evidence checks, and release or revision routing. |
+| `services/api.py` | Starlette routes for launching, polling, stopping, history, and artifact downloads. |
+| `services/runner.py` | Starts and observes worker processes, handles cancellation, and reads event logs. |
+| `services/worker.py` | Executes one saved brief in a child process and records its outcome. |
+| `services/facade.py` | Loads backend configuration, initializes the live adapter, and invokes the Flow. |
+| `services/backend.py` | Invokes the configured OpenAI model, prepares the available Tavily tool, handles screenshot review, and processes typed results. |
+| `services/registry.py` | Associates YAML roles with their Pydantic models and available tool names. |
+| `services/models.py` | Defines plans, design and research reports, generated files, patches, review findings, and related output schemas. |
+| `services/policy.py` | Chooses guidance based on whether the configured model has native reasoning support. |
+| `services/limits.py` | Records model request status and usage and helps recover from repeated tool actions. |
+| `services/errors.py` | Turns provider failures into useful messages without exposing private request details. |
+| `services/guardrails.py` | Checks input briefs and validates developer output through the CrewAI task guardrail. |
+| `services/project.py` | Validates generated paths and linked assets, checks generated files, merges patches, and writes or archives projects. |
+| `services/browser.py` | Serves the result locally for browser checks and captures desktop and mobile screenshots. |
+| `services/starter.py` | Applies the Forma login foundation and constrains edits to its protected layout. |
+| `services/storage.py` | Writes session artifacts and activity logs, and persists the session blackboard. |
+| `services/paths.py` | Provides the shared backend root path. |
+| `services/ui.py` | Existing event formatting helpers exercised by backend regression tests. The frontend uses its own presentation module. |
+| `__init__.py` files | Mark Python packages. The empty tools package comes from the scaffold. |
 
-The manager plans using predefined capabilities. UI design and standards run in parallel, development waits for both, then code review, security and screenshot review run in parallel before QA. Login projects transparently adapt the authored Forma design foundation. Native reasoning is kept for supported reasoning models; other models receive in-task checking guidance. There are no user-configured request budgets or overall run deadlines. HTTP operations still have normal network timeouts.
+| File or folder | Responsibility |
+| --- | --- |
+| `frontend/app.py` | Streamlit brief form, progress cards, timeline, run history, and deliverables. |
+| `frontend/client.py` | HTTP calls to the backend. |
+| `frontend/presentation.py` | Streamlit display styles and pure helpers for progress and activity formatting. |
+| `frontend/.streamlit/` | Streamlit appearance settings. |
+| `backend/examples/studio_login/` | The actual HTML, CSS, JavaScript, SVG assets and documentation used by the live login foundation. |
+| `backend/knowledge/` | Maintained source notes the standards researcher can use when live search is unavailable. |
+| `backend/outputs/` | Generated session folders with events, reports, revisions, screenshots and downloads. |
+| `backend/tests/fixture_backend.py` | Predictable stand-in for agent output in tests. |
+| `backend/tests/test_api.py` | Exercises API requests, cancellation, download boundaries, and the live-only request format. |
+| `backend/tests/test_limits.py` | Tests provider telemetry, reasoning policy, worker controls, and phase progress. |
+| `backend/tests/test_output_recovery.py` | Verifies structured output recovery and safe formatting of saved events. |
+| `backend/tests/test_project.py` | Verifies file structure, linkage, patches, and the login foundation. |
+| `backend/tests/test_schemas.py` | Checks output schemas and safe provider errors. |
+| `backend/tests/test_team.py` | Exercises Flow ordering, parallelism, session isolation, and review gates. |
+| `frontend/tests/test_app.py` | Exercises Streamlit progress, cancellation and connection errors. |
+| `pyproject.toml`, `uv.lock`, `.python-version` in both apps | Declare dependencies, lock resolved versions, and select Python. |
+| `.env.example` files | List configuration keys and example values. |
 
-The original application, its configuration, previous backups and run history are preserved under legacy/. Use the two-terminal commands above for the migrated application. Previous sessions in legacy/outputs/ have not been mixed into the new backend history.
+## Coding style and a simpler option
 
-## Configuration
+This is a layered Python application. Streamlit handles presentation, Starlette handles HTTP, and the Flow handles orchestration. CrewAI decorators register roles and stage dependencies. Small classes hold stateful resources such as the worker, session, and model adapter. Functions handle file operations and transformations. Pydantic defines the data exchanged by stages. Black formats the Python code, with a purpose comment above each function.
 
-Copy backend/.env.example to backend/.env only if creating a fresh configuration. Do not overwrite existing credentials. MODEL and OPENAI_API_KEY configure the live model. TAVILY_API_KEY enables external search; failed retrieval is recorded and maintained standards notes are labeled honestly. The monitored live provider remains native OpenAI, as in the original app. Chrome or Edge is required for actual browser screenshots/checks; CHROME_PATH can specify the executable.
+A smaller classroom demo could call the Flow directly from Streamlit. That would eliminate the HTTP client, API, and separate worker entry points. A synchronous call would also make the current live polling and Stop button harder to preserve. If the two-terminal setup and cancellation are important, keeping the process boundary while consolidating internal helpers is a smaller simplification.
 
-Optional backend port: DEVCREW_BACKEND_PORT=8000 in backend/.env. Match frontend/.env with DEVCREW_BACKEND_URL=http://127.0.0.1:8000 when changing it. The API binds to loopback and is a local demonstration service, without production authentication.
+Run `uv run pytest -q` from each app folder. If you need the native Flow graph for slides, run `uv run crewai flow plot` from `backend/`.
 
-## Graphs and verification
-
-From backend:
-
-~~~powershell
-uv run crewai flow plot
-uv run pytest tests -q
-~~~
-
-From frontend:
-
-~~~powershell
-uv run pytest tests -q
-~~~
-
-The graph command generates backend/diagrams/crewai_flow.html using CrewAI's actual Flow plotting API, plus execution.mmd, execution.svg and execution.md with the full application topology. diagram_sources.json records hashes of the implementation and YAML. Static topology describes possible paths; a session's events.jsonl records what actually ran. The UI Architecture tab can regenerate and download them.
-
-The backup is backups/pre_scaffold_20261110_134518.zip with an internal SHA-256 manifest. It includes the previous local configuration and should stay private.
-
-Validation for this migration uses offline workers, actual browser rendering, HTTP downloads, Streamlit AppTest and mocked provider requests. It does not claim fresh paid-model quality evaluation or CrewAI AMP evaluation.

@@ -1,0 +1,7 @@
+'use strict';
+const form=document.querySelector('#login-form');const email=document.querySelector('#email');const password=document.querySelector('#password');const toggle=document.querySelector('[data-testid=password-toggle]');const status=document.querySelector('#status');
+toggle.addEventListener('click',()=>{const show=password.type==='password';password.type=show?'text':'password';toggle.textContent=show?'Hide':'Show';toggle.setAttribute('aria-label',show?'Hide password':'Show password');toggle.setAttribute('aria-pressed',String(show));});
+function error(input,message){input.setAttribute('aria-invalid',String(Boolean(message)));document.querySelector('#'+input.id+'-error').textContent=message;}
+form.addEventListener('submit',event=>{event.preventDefault();status.textContent='';const validEmail=email.validity.valid&&email.value.trim();error(email,validEmail?'':'Please enter a valid email address.');error(password,password.value?'':'Please enter your password.');if(!validEmail||!password.value){(!validEmail?email:password).focus();return;}status.textContent='Demo complete. Your credentials were not sent or stored.';password.value='';});
+for(const input of [email,password])input.addEventListener('input',()=>{error(input,'');status.textContent='';});
+for(const id of ['signup','reset'])document.querySelector('#'+id).addEventListener('click',e=>{e.preventDefault();status.textContent=id==='reset'?'Password reset is not connected in this frontend demo.':'You are exploring a frontend demonstration. No account is needed.';});
