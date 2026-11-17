@@ -2,6 +2,13 @@
 
 DevCrew takes a frontend brief, plans the work, generates a linked web project, and reviews a rendered result. Streamlit displays progress and downloads. A local API starts one worker process for each run. The worker uses the OpenAI API and runs the CrewAI Flow.
 
+## Classroom walkthrough
+
+- [Backend setup, file-by-file walkthrough, and Labs 1.1–6.2](backend/README.md)
+- [Frontend setup and code walkthrough](frontend/README.md)
+
+The lab numbers in the presentation match the backend guide. Start with a standalone CrewAI scaffold before opening the final app.
+
 ## Run locally
 
 Set `OPENAI_API_KEY` in `backend/.env`. Use `backend/.env.example` as a template. Set `MODEL` there to select the OpenAI model, and optionally set `TAVILY_API_KEY` for documentation search. Keep credentials out of Git. Chrome or Edge is needed for browser checks. Set `CHROME_PATH` if the browser is installed in a nonstandard location.
